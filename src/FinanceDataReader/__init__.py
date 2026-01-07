@@ -5,7 +5,7 @@ from .data import (EtfListing)
 from .chart import (plot)
 from . import krx
 
-__version__ = '0.9.100'
+__version__ = '0.9.101'
 
 __all__ = [
     '__version__', 

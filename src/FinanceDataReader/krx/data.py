@@ -10,11 +10,15 @@ from . import krx_post
 
 __KRX_CODES = pd.DataFrame()
 
+_krx_headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd',
+}
+
 def _krx_fullcode(code):
     global __KRX_CODES
     if len(__KRX_CODES) == 0:
-        headers = {'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
-                   'Referer': 'http://data.krx.co.kr/', }
+
         data = {
             'locale': 'ko_KR',
             'mktsel': 'ALL',
@@ -23,7 +27,7 @@ def _krx_fullcode(code):
             'bld': 'dbms/comm/finder/finder_stkisu',
         }
         url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-        r = krx_post(url, headers=headers, data=data)
+        r = krx_post(url, headers=_krx_headers, data=data)
         __KRX_CODES = pd.DataFrame(r.json()['block1'])
         __KRX_CODES = __KRX_CODES.set_index('short_code')
 
@@ -32,8 +36,6 @@ def _krx_fullcode(code):
     return __KRX_CODES.loc[code]['full_code']
 
 def _krx_index_price_2years(idx1, idx2, from_date, to_date):
-    headers = {'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
-               'Referer': 'http://data.krx.co.kr/', }
     data = {
         'bld': 'dbms/MDC/STAT/standard/MDCSTAT00301',
         'indIdx': idx1,
@@ -46,7 +48,7 @@ def _krx_index_price_2years(idx1, idx2, from_date, to_date):
     }
 
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = krx_post(url, headers=headers, data=data)
+    r = krx_post(url, headers=_krx_headers, data=data)
     try:
         jo = r.json()
     except:
@@ -106,11 +108,8 @@ def _krx_stock_price_2years(full_code, from_date, to_date):
         'csvxls_isNo': 'false',
     }
 
-    headers = {'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
-               'Referer': 'http://data.krx.co.kr/', }
-
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = krx_post(url, headers=headers, data=data)
+    r = krx_post(url, headers=_krx_headers, data=data)
     if r.status_code != 200:
         raise ValueError(f'{r.status_code} - {r.reason}' + '(Period is up to 2 years)')
 
@@ -155,8 +154,6 @@ def _krx_stock_price(full_code, from_date, to_date):
     return df.loc[from_date:to_date]
 
 def _krx_delisting_price_2years(full_code, from_date, to_date):
-    headers = {'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
-               'Referer': 'http://data.krx.co.kr/', }
     data = {
         'bld': 'dbms/MDC/STAT/issue/MDCSTAT23902',
         'isuCd': full_code,
@@ -169,7 +166,7 @@ def _krx_delisting_price_2years(full_code, from_date, to_date):
     }
 
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = krx_post(url, headers=headers, data=data)
+    r = krx_post(url, headers=_krx_headers, data=data)
     if r.status_code != 200:
         raise ValueError(f'{r.status_code} - {r.reason}')
 
@@ -193,8 +190,6 @@ def _krx_delisting_price_2years(full_code, from_date, to_date):
     return df
 
 def _krx_delisting_price(code, from_date, to_date):
-    headers = {'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
-               'Referer': 'http://data.krx.co.kr/', }
     data = {
         'mktsel': 'ALL',
         'searchText': '',
@@ -202,7 +197,7 @@ def _krx_delisting_price(code, from_date, to_date):
     }
 
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = krx_post(url, headers=headers, data=data)
+    r = krx_post(url, headers=_krx_headers, data=data)
     j = json.loads(r.text)
     df = pd.json_normalize(j['block1'])
     df = df.set_index('short_code')
