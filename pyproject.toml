@@ -37,10 +37,11 @@ Repository = "https://github.com/financedata/financedatareader"
 notebook = ["ipykernel", "nbformat>=4.2.0"]
 test = ["pytest"]
 docs = ["sphinx"]
+krx = ["curl-cffi"]
 
 [dependency-groups]
 dev = [
-    "finance-datareader[notebook,test]",
+    "finance-datareader[notebook,test,krx]",
 ]
 
 [tool.uv]

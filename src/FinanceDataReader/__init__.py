@@ -3,6 +3,7 @@ from .data import (SnapDataReader)
 from .data import (StockListing)
 from .data import (EtfListing)
 from .chart import (plot)
+from . import krx
 
 __version__ = '0.9.100'
 
@@ -12,5 +13,6 @@ __all__ = [
     'SnapDataReader', 
     'StockListing', 
     'EtfListing', 
+    'krx',
     'chart'
 ]

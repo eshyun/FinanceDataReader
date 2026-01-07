@@ -1,11 +1,12 @@
 import io
 import time
 from datetime import datetime, timedelta
-import requests
 import numpy as np
 import pandas as pd
 import json
 import ssl
+
+from . import krx_get, krx_post
 
 class KrxMarcapListing:
     def __init__(self, market):
@@ -17,7 +18,7 @@ class KrxMarcapListing:
         
     def read(self):
         url = 'http://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?baseName=krx.mdc.i18n.component&key=B128.bld'
-        j = json.loads(requests.get(url, headers=self.headers).text)
+        j = json.loads(krx_get(url, headers=self.headers).text)
         date_str = j['result']['output'][0]['max_work_dt']
         
         mkt_map = {'KRX-MARCAP':'ALL', 'KRX':'ALL', 'KOSPI':'STK', 'KOSDAQ':'KSQ', 'KONEX':'KNX'}
@@ -33,7 +34,7 @@ class KrxMarcapListing:
             'money': '1',
             'csvxls_isNo': 'false',
         }
-        html_text = requests.post(url, headers=self.headers, data=data).text
+        html_text = krx_post(url, headers=self.headers, data=data).text
         j = json.loads(html_text)
         df = pd.DataFrame(j['OutBlock_1'])
         df = df.replace(r',', '', regex=True)
@@ -71,7 +72,7 @@ class KrxStockListing: # descriptive information
             raise ValueError(f"market shoud be one of {mkt_list}")
         
         url = 'http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13'
-        r = requests.get(url, headers=self.headers)
+        r = krx_get(url, headers=self.headers)
         dfs = pd.read_html(io.StringIO(r.text), header=0)
         df_listing = dfs[0]
         cols_ren = {'회사명':'Name', '종목코드':'Code', '업종':'Sector', '주요제품':'Industry', 
@@ -84,7 +85,7 @@ class KrxStockListing: # descriptive information
         # KRX 주식종목검색
         data = {'bld': 'dbms/comm/finder/finder_stkisu',}
         url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-        r = requests.post(url, data, headers=self.headers)
+        r = krx_post(url, headers=self.headers, data=data)
         jo = json.loads(r.text)
         df_finder = pd.DataFrame(jo['block1'])
         
@@ -126,7 +127,7 @@ def _krx_delisting_2years(from_date, to_date):
                     'Referer': 'http://data.krx.co.kr/', }
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
 
-    r = requests.post(url, data, headers=_krx_headers)
+    r = krx_post(url, headers=_krx_headers, data=data)
     try:
         jo = r.json()
     except:
@@ -197,7 +198,7 @@ class KrxAdministrative:
         
     def read(self):
         url = "http://kind.krx.co.kr/investwarn/adminissue.do?method=searchAdminIssueSub&currentPageSize=5000&forward=adminissue_down"
-        r = requests.get(url,headers=self.headers)
+        r = krx_get(url, headers=self.headers)
         df = pd.read_html(io.StringIO(r.text), header=0, encoding='euc-kr')[0]
         df['지정일'] = pd.to_datetime(df['지정일'])
         col_map = {'종목코드':'Symbol', '종목명':'Name', '지정일':'DesignationDate', '지정사유':'Reason'}

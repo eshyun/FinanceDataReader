@@ -24,6 +24,42 @@ The main functions are as follows.
 pip install finance-datareader
 ```
 
+# KRX Login (Optional)
+
+KRX endpoints may require a logged-in session cookie in some environments. FinanceDataReader provides an optional KRX login helper.
+
+To enable it:
+
+1) Install optional dependency:
+
+```bash
+pip install "finance-datareader[krx]"
+```
+
+2) Provide credentials (one of the following):
+
+- Environment variables:
+  - `KRX_MBR_ID` (or `KRX_ID`)
+  - `KRX_PASSWORD` (or `KRX_PW`)
+- Credentials file:
+  - `KRX_CREDENTIALS_FILE`
+  - or `~/.config/finance-datareader/krx_credentials.json`
+
+3) Login or enable auto-login:
+
+```python
+import FinanceDataReader as fdr
+
+# Manual login
+fdr.krx.login()
+
+# Auto-login before KRX requests (enabled by default)
+# fdr.krx.enable_auto_login_on_failure(True)
+
+# If you want to disable it explicitly
+# fdr.krx.enable_auto_login_on_failure(False)
+```
+
 # Quick Start
 지원하는 거래소: KRX(한국거래소), NYSE(뉴욕증권거래소), NASDAQ(나스닥), AMEX(아멕스), SSE(상해), SZSE(심천), HKEX(홍콩), TSE(도쿄)
 

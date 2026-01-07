@@ -2,6 +2,14 @@ import pytest
 import FinanceDataReader as fdr
 import pandas as pd
 
+
+def test_krx_login_api_exposed():
+    assert hasattr(fdr, 'krx')
+    assert hasattr(fdr.krx, 'login')
+    assert hasattr(fdr.krx, 'enable_auto_login_on_failure')
+    assert hasattr(fdr.krx, 'auto_login_on_failure_enabled')
+    assert fdr.krx.auto_login_on_failure_enabled() is True
+
 @pytest.mark.krx
 def test_krx_stock_listing():
     # Basic KRX listing

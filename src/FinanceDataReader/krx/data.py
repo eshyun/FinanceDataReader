@@ -1,10 +1,12 @@
 # KRX data reader for FinanceDataReader  
 # 2023 FinacneData.KR
 
-import requests
 import json
-import pandas as pd
 from datetime import datetime, timedelta
+
+import pandas as pd
+
+from . import krx_post
 
 __KRX_CODES = pd.DataFrame()
 
@@ -21,7 +23,7 @@ def _krx_fullcode(code):
             'bld': 'dbms/comm/finder/finder_stkisu',
         }
         url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-        r = requests.post(url, data, headers=headers)
+        r = krx_post(url, headers=headers, data=data)
         __KRX_CODES = pd.DataFrame(r.json()['block1'])
         __KRX_CODES = __KRX_CODES.set_index('short_code')
 
@@ -44,7 +46,7 @@ def _krx_index_price_2years(idx1, idx2, from_date, to_date):
     }
 
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = requests.post(url, data, headers=headers)
+    r = krx_post(url, headers=headers, data=data)
     try:
         jo = r.json()
     except:
@@ -108,7 +110,7 @@ def _krx_stock_price_2years(full_code, from_date, to_date):
                'Referer': 'http://data.krx.co.kr/', }
 
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = requests.post(url, data, headers=headers)
+    r = krx_post(url, headers=headers, data=data)
     if r.status_code != 200:
         raise ValueError(f'{r.status_code} - {r.reason}' + '(Period is up to 2 years)')
 
@@ -167,7 +169,7 @@ def _krx_delisting_price_2years(full_code, from_date, to_date):
     }
 
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = requests.post(url, data, headers=headers)
+    r = krx_post(url, headers=headers, data=data)
     if r.status_code != 200:
         raise ValueError(f'{r.status_code} - {r.reason}')
 
@@ -200,7 +202,7 @@ def _krx_delisting_price(code, from_date, to_date):
     }
 
     url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
-    r = requests.post(url, data, headers=headers)
+    r = krx_post(url, headers=headers, data=data)
     j = json.loads(r.text)
     df = pd.json_normalize(j['block1'])
     df = df.set_index('short_code')
