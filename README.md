@@ -43,7 +43,7 @@ pip install "finance-datareader[krx]"
   - `KRX_PASSWORD` (or `KRX_PW`)
 - Credentials file:
   - `KRX_CREDENTIALS_FILE`
-  - or `~/.config/finance-datareader/krx_credentials.json`
+  - or `~/.config/krx-session/krx_credentials.json`
 
 3) Login or enable auto-login:
 
@@ -257,3 +257,26 @@ fdr.DataReader('YAHOO:000100.KS', '2023', '2024') # 2023년 데이터
 * [S&P500 팩터 데이터 수집과 분석](https://nbviewer.jupyter.org/35a1b0d5248bc9b09513e53be437ac42)
 
 **2018-2025 [FinanceData.KR]()**
+
+### Cross-Process Session Sharing
+
+After a successful login, the session is automatically saved to a file (`~/.config/krx-session/session.json`) for **cross-process session sharing**. This enables:
+
+- Multiple Python scripts running simultaneously can reuse the same session without duplicate logins
+- Session sharing with other packages (e.g., pykrx, FinanceDataReader)
+- Sessions have a default 30-minute TTL and will automatically re-login when expired
+
+Session file location can be customized via environment variables:
+
+```bash
+export KRX_SESSION_FILE="~/.my-custom-path/session.json"
+# or
+export KRX_SESSION_DIR="~/.my-custom-dir"  # session.json will be created in this directory
+```
+
+To manually clear the saved session:
+
+```python
+from FinanceDataReader.krx import clear_session_file
+clear_session_file()
+```

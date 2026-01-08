@@ -2,6 +2,8 @@
 import json
 import os
 from pathlib import Path
+import fcntl
+from datetime import datetime, timedelta
 
 import requests
 
@@ -64,7 +66,7 @@ def _resolve_krx_credentials(mbr_id: str | None, password: str | None):
 
     cred_path = os.getenv("KRX_CREDENTIALS_FILE")
     if not cred_path:
-        cred_path = str(Path("~/.config/finance-datareader/krx_credentials.json"))
+        cred_path = str(Path("~/.config/krx-session/krx_credentials.json"))
     data = _load_krx_credentials_from_file(cred_path)
     if data:
         mbr_id = mbr_id or data.get("mbrId") or data.get("mbr_id") or data.get("id")
@@ -86,6 +88,146 @@ def is_auto_login_enabled() -> bool:
     return _AUTO_LOGIN_ENABLED
 
 
+def _get_session_file_path():
+    """Get the session file path from environment or default location."""
+    session_file = os.getenv("KRX_SESSION_FILE")
+    if session_file:
+        return Path(session_file).expanduser()
+    
+    session_dir = os.getenv("KRX_SESSION_DIR")
+    if session_dir:
+        return Path(session_dir).expanduser() / "session.json"
+    
+    return Path("~/.config/krx-session/session.json").expanduser()
+
+
+def _serialize_session_cookies(session):
+    """Serialize session cookies to a dict."""
+    try:
+        if hasattr(session, 'cookies'):
+            cookies = {}
+            for cookie in session.cookies:
+                cookies[cookie.name] = {
+                    'value': cookie.value,
+                    'domain': cookie.domain,
+                    'path': cookie.path,
+                    'secure': cookie.secure,
+                    'expires': cookie.expires,
+                }
+            return cookies
+    except Exception:
+        pass
+    return {}
+
+
+def _deserialize_session_cookies(session, cookies_dict):
+    """Deserialize cookies dict back to session."""
+    try:
+        if hasattr(session, 'cookies'):
+            for name, attrs in cookies_dict.items():
+                session.cookies.set(
+                    name=name,
+                    value=attrs.get('value'),
+                    domain=attrs.get('domain'),
+                    path=attrs.get('path'),
+                )
+    except Exception:
+        pass
+
+
+def _save_session_to_file(session, mbr_no=None, ttl_minutes=30):
+    """Save session to file with file locking."""
+    session_file = _get_session_file_path()
+    session_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    now = datetime.now()
+    expires_at = now + timedelta(minutes=ttl_minutes)
+    
+    session_data = {
+        'cookies': _serialize_session_cookies(session),
+        'created_at': now.isoformat(),
+        'expires_at': expires_at.isoformat(),
+        'last_used': now.isoformat(),
+        'mbr_no': mbr_no,
+        'ttl_minutes': ttl_minutes,
+    }
+    
+    lock_file = session_file.parent / f"{session_file.name}.lock"
+    try:
+        with open(lock_file, 'w') as lock_fd:
+            fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX)
+            try:
+                with open(session_file, 'w', encoding='utf-8') as f:
+                    json.dump(session_data, f, indent=2)
+            finally:
+                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
+    except Exception:
+        try:
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(session_data, f, indent=2)
+        except Exception:
+            pass
+
+
+def _load_session_from_file():
+    """Load session from file if valid."""
+    session_file = _get_session_file_path()
+    if not session_file.exists():
+        return None
+    
+    lock_file = session_file.parent / f"{session_file.name}.lock"
+    
+    try:
+        with open(lock_file, 'w') as lock_fd:
+            fcntl.flock(lock_fd.fileno(), fcntl.LOCK_SH)
+            try:
+                with open(session_file, 'r', encoding='utf-8') as f:
+                    session_data = json.load(f)
+            finally:
+                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
+    except Exception:
+        try:
+            with open(session_file, 'r', encoding='utf-8') as f:
+                session_data = json.load(f)
+        except Exception:
+            return None
+    
+    expires_at_str = session_data.get('expires_at')
+    if expires_at_str:
+        try:
+            expires_at = datetime.fromisoformat(expires_at_str)
+            if datetime.now() >= expires_at:
+                return None
+        except Exception:
+            return None
+    
+    try:
+        session = _create_curl_session()
+        cookies_dict = session_data.get('cookies', {})
+        _deserialize_session_cookies(session, cookies_dict)
+        
+        session_data['last_used'] = datetime.now().isoformat()
+        try:
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(session_data, f, indent=2)
+        except Exception:
+            pass
+        
+        return session
+    except Exception:
+        return None
+
+
+def clear_session_file():
+    """Clear the saved session file."""
+    session_file = _get_session_file_path()
+    if session_file.exists():
+        try:
+            session_file.unlink()
+        except Exception:
+            pass
+
+
 def login(
     mbr_id: str | None = None,
     password: str | None = None,
@@ -100,7 +242,7 @@ def login(
         raise KrxRequestError(
             "KRX login requires credentials. Provide mbr_id/password or set environment variables "
             "KRX_MBR_ID and KRX_PASSWORD. You may also set KRX_CREDENTIALS_FILE or use "
-            "~/.config/finance-datareader/krx_credentials.json"
+            "~/.config/krx-session/krx_credentials.json"
         )
 
     if session is None:
@@ -206,6 +348,9 @@ def login(
 
     if set_global_session:
         set_http_session(session)
+    
+    # Save session to file for cross-process sharing
+    _save_session_to_file(session, mbr_no=mbr_no, ttl_minutes=30)
 
     return session, data
 
@@ -239,6 +384,12 @@ def _maybe_auto_login():
 
 
 def krx_get(url: str, *, headers: dict | None = None, params=None, timeout: int = 30):
+    # Try to load session from file if not in memory
+    if get_http_session() is None:
+        file_session = _load_session_from_file()
+        if file_session is not None:
+            set_http_session(file_session)
+    
     _maybe_auto_login()
     session = get_http_session()
     if session is None:
@@ -250,6 +401,12 @@ def krx_get(url: str, *, headers: dict | None = None, params=None, timeout: int 
 
 
 def krx_post(url: str, *, headers: dict | None = None, data=None, timeout: int = 30):
+    # Try to load session from file if not in memory
+    if get_http_session() is None:
+        file_session = _load_session_from_file()
+        if file_session is not None:
+            set_http_session(file_session)
+    
     _maybe_auto_login()
     session = get_http_session()
     if session is None:
@@ -258,4 +415,3 @@ def krx_post(url: str, *, headers: dict | None = None, data=None, timeout: int =
         return session.post(url, headers=headers, data=data, timeout=timeout)
     except TypeError:
         return session.post(url, headers=headers, data=data)
-
