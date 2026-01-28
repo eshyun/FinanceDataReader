@@ -11,3 +11,4 @@
 - Session files have a 30-minute TTL and automatically re-login when expired.
 - Session file location can be customized via `KRX_SESSION_FILE` or `KRX_SESSION_DIR` environment variables.
 - Added `clear_session_file()` function to manually delete saved sessions.
+- Replaced POSIX-only `fcntl` file locks with `portalocker` to support Windows for session file locking.

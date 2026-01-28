@@ -36,6 +36,8 @@ To enable it:
 pip install "finance-datareader[krx]"
 ```
 
+The optional `krx` extra installs dependencies for KRX login (`curl-cffi`) and cross-process session sharing file locking (`portalocker`).
+
 2) Provide credentials (one of the following):
 
 - Environment variables:

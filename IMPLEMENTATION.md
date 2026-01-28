@@ -10,6 +10,7 @@ FinanceDataReader's `FinanceDataReader.krx` module now provides a KRX "login" fl
 - KRX modules (`FinanceDataReader.krx.data`, `FinanceDataReader.krx.listing`, `FinanceDataReader.krx.snap`) use `krx_get`/`krx_post` so that the shared session can be reused for all KRX requests.
 - KRX request headers (including `Referer`) are kept in sync with KRX site requirements while still routing requests through the shared session.
 - Login requires credentials and uses `curl-cffi` to create a browser-impersonated session.
+- Cross-process session sharing uses a file lock implemented with `portalocker` for cross-platform support.
 
 ### Credentials resolution
 

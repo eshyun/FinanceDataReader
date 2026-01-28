@@ -5,6 +5,7 @@
 import FinanceDataReader as fdr
 import pytest
 import pandas as pd
+import requests
 
 
 def test_krx_login_api_exposed():
@@ -13,6 +14,25 @@ def test_krx_login_api_exposed():
     assert hasattr(fdr.krx, 'enable_auto_login_on_failure')
     assert hasattr(fdr.krx, 'auto_login_on_failure_enabled')
     assert fdr.krx.auto_login_on_failure_enabled() is True
+
+
+def test_krx_session_file_lock_and_write(tmp_path, monkeypatch):
+    monkeypatch.setenv("KRX_SESSION_DIR", str(tmp_path))
+
+    session = requests.Session()
+    session.cookies.set(
+        name="_test_cookie",
+        value="1",
+        domain="data.krx.co.kr",
+        path="/",
+    )
+
+    fdr.krx._save_session_to_file(session, mbr_no="1", ttl_minutes=1)
+
+    session_file = tmp_path / "session.json"
+    lock_file = tmp_path / "session.json.lock"
+    assert session_file.exists()
+    assert lock_file.exists()
 
 @pytest.mark.krx
 def test_krx_stock_listing():

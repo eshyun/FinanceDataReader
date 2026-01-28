@@ -2,10 +2,15 @@
 import json
 import os
 from pathlib import Path
-import fcntl
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 import requests
+
+try:
+    import portalocker
+except Exception:
+    portalocker = None
 
 
 _HTTP_SESSION = None
@@ -13,6 +18,18 @@ _HTTP_SESSION = None
 
 class KrxRequestError(RuntimeError):
     pass
+
+
+@contextmanager
+def _file_lock(lock_file: Path, *, shared: bool):
+    if portalocker is None:
+        yield
+        return
+
+    lock_file.parent.mkdir(parents=True, exist_ok=True)
+    flags = portalocker.LOCK_SH if shared else portalocker.LOCK_EX
+    with portalocker.Lock(str(lock_file), mode="a", flags=flags):
+        yield
 
 
 def set_http_session(session):
@@ -154,13 +171,9 @@ def _save_session_to_file(session, mbr_no=None, ttl_minutes=30):
     
     lock_file = session_file.parent / f"{session_file.name}.lock"
     try:
-        with open(lock_file, 'w') as lock_fd:
-            fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX)
-            try:
-                with open(session_file, 'w', encoding='utf-8') as f:
-                    json.dump(session_data, f, indent=2)
-            finally:
-                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
+        with _file_lock(lock_file, shared=False):
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(session_data, f, indent=2)
     except Exception:
         try:
             with open(session_file, 'w', encoding='utf-8') as f:
@@ -178,13 +191,9 @@ def _load_session_from_file():
     lock_file = session_file.parent / f"{session_file.name}.lock"
     
     try:
-        with open(lock_file, 'w') as lock_fd:
-            fcntl.flock(lock_fd.fileno(), fcntl.LOCK_SH)
-            try:
-                with open(session_file, 'r', encoding='utf-8') as f:
-                    session_data = json.load(f)
-            finally:
-                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
+        with _file_lock(lock_file, shared=True):
+            with open(session_file, 'r', encoding='utf-8') as f:
+                session_data = json.load(f)
     except Exception:
         try:
             with open(session_file, 'r', encoding='utf-8') as f:
@@ -208,8 +217,9 @@ def _load_session_from_file():
         
         session_data['last_used'] = datetime.now().isoformat()
         try:
-            with open(session_file, 'w', encoding='utf-8') as f:
-                json.dump(session_data, f, indent=2)
+            with _file_lock(lock_file, shared=False):
+                with open(session_file, 'w', encoding='utf-8') as f:
+                    json.dump(session_data, f, indent=2)
         except Exception:
             pass
         
