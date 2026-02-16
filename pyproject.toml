@@ -34,7 +34,7 @@ dependencies = [
 Repository = "https://github.com/financedata/financedatareader"
 
 [project.optional-dependencies]
-notebook = ["ipykernel", "nbformat>=4.2.0"]
+notebook = ["ipykernel", "nbformat"]
 test = ["pytest"]
 docs = ["sphinx"]
 krx = [
