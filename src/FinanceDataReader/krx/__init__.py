@@ -393,6 +393,21 @@ def _maybe_auto_login():
     )
 
 
+def _is_logout_response(resp) -> bool:
+    """Detect a KRX 'LOGOUT' response which indicates an invalid/expired session.
+
+    KRX sometimes returns plain text 'LOGOUT' (non-JSON) when the session cookies
+    are no longer valid.
+    """
+    if resp is None:
+        return False
+    try:
+        txt = (getattr(resp, "text", "") or "")
+    except Exception:
+        return False
+    return txt.strip() == "LOGOUT"
+
+
 def krx_get(url: str, *, headers: dict | None = None, params=None, timeout: int = 30):
     # Try to load session from file if not in memory
     if get_http_session() is None:
@@ -400,14 +415,22 @@ def krx_get(url: str, *, headers: dict | None = None, params=None, timeout: int 
         if file_session is not None:
             set_http_session(file_session)
     
-    _maybe_auto_login()
-    session = get_http_session()
-    if session is None:
-        return requests.get(url, headers=headers, params=params, timeout=timeout)
-    try:
-        return session.get(url, headers=headers, params=params, timeout=timeout)
-    except TypeError:
-        return session.get(url, headers=headers, params=params)
+    for attempt in range(2):
+        _maybe_auto_login()
+        session = get_http_session()
+        if session is None:
+            resp = requests.get(url, headers=headers, params=params, timeout=timeout)
+        else:
+            try:
+                resp = session.get(url, headers=headers, params=params, timeout=timeout)
+            except TypeError:
+                resp = session.get(url, headers=headers, params=params)
+
+        if attempt == 0 and _is_logout_response(resp):
+            clear_session_file()
+            set_http_session(None)
+            continue
+        return resp
 
 
 def krx_post(url: str, *, headers: dict | None = None, data=None, timeout: int = 30):
@@ -417,11 +440,19 @@ def krx_post(url: str, *, headers: dict | None = None, data=None, timeout: int =
         if file_session is not None:
             set_http_session(file_session)
     
-    _maybe_auto_login()
-    session = get_http_session()
-    if session is None:
-        return requests.post(url, headers=headers, data=data, timeout=timeout)
-    try:
-        return session.post(url, headers=headers, data=data, timeout=timeout)
-    except TypeError:
-        return session.post(url, headers=headers, data=data)
+    for attempt in range(2):
+        _maybe_auto_login()
+        session = get_http_session()
+        if session is None:
+            resp = requests.post(url, headers=headers, data=data, timeout=timeout)
+        else:
+            try:
+                resp = session.post(url, headers=headers, data=data, timeout=timeout)
+            except TypeError:
+                resp = session.post(url, headers=headers, data=data)
+
+        if attempt == 0 and _is_logout_response(resp):
+            clear_session_file()
+            set_http_session(None)
+            continue
+        return resp

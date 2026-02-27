@@ -28,6 +28,8 @@ pip install finance-datareader
 
 KRX endpoints may require a logged-in session cookie in some environments. FinanceDataReader provides an optional KRX login helper.
 
+If KRX returns plain text `LOGOUT` (expired/invalid session cookies), FinanceDataReader will automatically clear the session and retry the request once.
+
 To enable it:
 
 1) Install optional dependency:

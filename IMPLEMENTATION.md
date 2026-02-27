@@ -28,6 +28,7 @@ Credentials are resolved in the following order:
 
 - Auto-login is enabled by default.
 - `krx_get`/`krx_post` will attempt to login once (best-effort) before sending requests.
+- If KRX returns plain text `LOGOUT` (typically due to expired/invalid cookies), `krx_get`/`krx_post` will clear the saved/global session and retry the request once.
 
 Relevant public APIs:
 

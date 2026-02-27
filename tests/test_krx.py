@@ -34,6 +34,32 @@ def test_krx_session_file_lock_and_write(tmp_path, monkeypatch):
     assert session_file.exists()
     assert lock_file.exists()
 
+
+def test_krx_post_retries_on_logout(monkeypatch):
+    import FinanceDataReader.krx as krx
+
+    class _Resp:
+        def __init__(self, text: str):
+            self.text = text
+
+    calls = {"n": 0}
+
+    def fake_post(url, headers=None, data=None, timeout=30):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _Resp("LOGOUT")
+        return _Resp('{"output": []}')
+
+    monkeypatch.setattr(krx, "_maybe_auto_login", lambda: None)
+    monkeypatch.setattr(krx, "_load_session_from_file", lambda: None)
+    monkeypatch.setattr(krx, "clear_session_file", lambda: None)
+    monkeypatch.setattr(krx, "set_http_session", lambda session: None)
+    monkeypatch.setattr(krx.requests, "post", fake_post)
+
+    resp = krx.krx_post("http://example.com", headers={}, data={})
+    assert calls["n"] == 2
+    assert resp.text != "LOGOUT"
+
 @pytest.mark.krx
 def test_krx_stock_listing():
     # Basic KRX listing
