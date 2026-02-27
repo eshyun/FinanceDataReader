@@ -52,6 +52,7 @@ def test_krx_post_retries_on_logout(monkeypatch):
 
     monkeypatch.setattr(krx, "_maybe_auto_login", lambda: None)
     monkeypatch.setattr(krx, "_load_session_from_file", lambda: None)
+    monkeypatch.setattr(krx, "get_http_session", lambda: None)
     monkeypatch.setattr(krx, "clear_session_file", lambda: None)
     monkeypatch.setattr(krx, "set_http_session", lambda session: None)
     monkeypatch.setattr(krx.requests, "post", fake_post)

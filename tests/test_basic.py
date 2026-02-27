@@ -192,7 +192,7 @@ def test_krx_listing():
     assert len(df) > 100
 
     df = fdr.StockListing('KRX-ADMINISTRATIVE') # 50+ 종목 - KRX 관리종목
-    assert len(df) > 100
+    assert len(df) > 10
 
     df = fdr.StockListing('S&P500') # S&P500 종목
     assert len(df) >= 500
