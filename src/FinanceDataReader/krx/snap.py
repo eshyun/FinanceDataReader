@@ -16,7 +16,7 @@ def _krx_last_working_day(date=None):
     date = pd.to_datetime(date) if date else pd.Timestamp.today()
     date_str = date.strftime('%Y%m%d')
     url = (
-         'http://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?'
+         'https://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?'
         f'baseName=krx.mdc.i18n.component&key=B161.bld&inDate={date_str}'
     )
     r = krx_get(url, headers=_krx_headers)
@@ -30,7 +30,7 @@ def _krx_index_codes():
     '''
     [11006] 지수목록 조회
     '''
-    url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
 
     form_data = {
         'locale': 'ko_KR',
@@ -53,7 +53,7 @@ def _krx_index_listings(idx1, idx2, date=None):
     * date: 날짜 (기본값 오늘)
     '''
     end = _krx_last_working_day(date)
-    url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
     form_data = {
         'bld': 'dbms/MDC/STAT/standard/MDCSTAT00601',
         'indIdx': idx1,

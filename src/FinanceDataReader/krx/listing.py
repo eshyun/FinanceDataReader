@@ -17,7 +17,7 @@ class KrxMarcapListing:
             }
         
     def read(self):
-        url = 'http://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?baseName=krx.mdc.i18n.component&key=B128.bld'
+        url = 'https://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?baseName=krx.mdc.i18n.component&key=B128.bld'
         r = None
         try:
             r = krx_get(url, headers=self.headers)
@@ -90,7 +90,7 @@ class KrxStockListing: # descriptive information
 
         # KRX 주식종목검색
         data = {'bld': 'dbms/comm/finder/finder_stkisu',}
-        url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+        url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
         r = krx_post(url, headers=self.headers, data=data)
         jo = json.loads(r.text)
         df_finder = pd.DataFrame(jo['block1'])
@@ -133,7 +133,7 @@ def _krx_delisting_2years(from_date, to_date):
         'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
         'Referer': 'https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd'
     }
-    url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
 
     r = krx_post(url, headers=_krx_headers, data=data)
     try:
@@ -201,7 +201,7 @@ class KrxAdministrative:
         self.market = market
         self.headers = {
             'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
-            'Referer': 'http://data.krx.co.kr/'
+            'Referer': 'https://data.krx.co.kr/'
             }
         
     def read(self):

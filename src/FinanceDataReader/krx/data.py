@@ -26,7 +26,7 @@ def _krx_fullcode(code):
             'typeNo': 0,
             'bld': 'dbms/comm/finder/finder_stkisu',
         }
-        url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+        url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
         r = krx_post(url, headers=_krx_headers, data=data)
         __KRX_CODES = pd.DataFrame(r.json()['block1'])
         __KRX_CODES = __KRX_CODES.set_index('short_code')
@@ -47,7 +47,7 @@ def _krx_index_price_2years(idx1, idx2, from_date, to_date):
         'csvxls_isNo': 'false',
     }
 
-    url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
     r = krx_post(url, headers=_krx_headers, data=data)
     try:
         jo = r.json()
@@ -108,7 +108,7 @@ def _krx_stock_price_2years(full_code, from_date, to_date):
         'csvxls_isNo': 'false',
     }
 
-    url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
     r = krx_post(url, headers=_krx_headers, data=data)
     if r.status_code != 200:
         raise ValueError(f'{r.status_code} - {r.reason}' + '(Period is up to 2 years)')
@@ -165,7 +165,7 @@ def _krx_delisting_price_2years(full_code, from_date, to_date):
         'csvxls_isNo': 'false',
     }
 
-    url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
     r = krx_post(url, headers=_krx_headers, data=data)
     if r.status_code != 200:
         raise ValueError(f'{r.status_code} - {r.reason}')
@@ -196,7 +196,7 @@ def _krx_delisting_price(code, from_date, to_date):
         'bld': 'dbms/comm/finder/finder_listdelisu',
     }
 
-    url = 'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
+    url = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd'
     r = krx_post(url, headers=_krx_headers, data=data)
     j = json.loads(r.text)
     df = pd.json_normalize(j['block1'])
