@@ -63,7 +63,7 @@ KRX Data Marketplace 전환 이후, KRX JSON 엔드포인트(`getJsonData.cmd`, 
    - `KRX_PASSWORD` 또는 `KRX_PW`
 3. 자격증명 파일:
    - `KRX_CREDENTIALS_FILE`
-   - 기본값: `~/.config/finance-datareader/krx_credentials.json`
+   - 기본값: `~/.config/krx-session/krx_credentials.json`
 
 자격증명 파일 포맷 예시:
 

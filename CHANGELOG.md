@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Merged `upstream/master` (0.9.201): added GitHub-backed KRX cache readers (`KrxIndexReaderCache`, `KrxSnapReaderCache`, `KrxStockListingCache`, `KrxMarcapListingCache`, `KrxDelistingCache`), the `fdr` CLI, KRX stock code reform support, and 2026 date ranges.
+- Default `DataReader` major indices and `StockListing` KRX paths now use upstream cache readers; authenticated/direct KRX readers (`KRX:`, `KRX-INDEX:`, `KRX-DETAIL:`, `KRX-DELISTING:` and the non-cache listing classes) still use the fork's `krx_get`/`krx_post` session layer.
+- Cache readers keep the fork's `https://data.krx.co.kr` convention; the public B128 bundle endpoint stays on plain `requests` because it needs no login.
 - Fixed KRX authenticated sessions by switching all `data.krx.co.kr` endpoints to `https://` so the Secure-only `JSESSIONID` cookie is sent; `http://` requests previously returned plain-text `LOGOUT` (HTTP 400).
 - Added KRX login/session support for `FinanceDataReader.krx` (optional `curl-cffi`) and routed KRX HTTP requests through a shared session wrapper.
 - Enabled KRX auto-login by default (best-effort; requires credentials to actually login).

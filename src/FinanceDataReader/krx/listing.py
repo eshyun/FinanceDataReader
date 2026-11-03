@@ -1,12 +1,53 @@
 import io
 import time
 from datetime import datetime, timedelta
+import requests
 import numpy as np
 import pandas as pd
 import json
 import ssl
 
 from . import krx_get, krx_post
+
+
+class KrxMarcapListingCache:
+    def __init__(self, market):
+        self.market = market
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd'
+            }
+        
+    def read(self):
+        url = 'https://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?baseName=krx.mdc.i18n.component&key=B128.bld'
+        try:
+            r = requests.get(url, headers=self.headers)
+            j = json.loads(r.text)
+        except:
+            print(r.text)
+            raise ValueError(f"Failed to load data from {url}")
+        j = json.loads(requests.get(url, headers=self.headers).text)
+        date_str = j['result']['output'][0]['max_work_dt']
+        from datetime import datetime
+        formatted_date = datetime.strptime(date_str, '%Y%m%d').strftime('%Y-%m-%d')
+        
+        # https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/krx/2026-03-11.csv
+        # 해당 날짜의 데이터를 가져옴
+        url = f'https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/krx/{formatted_date}.csv'
+        df = pd.read_csv(url, dtype={'Code': str, 'Dept': str, 'ChangeCode': str, 'MarketId': str})
+        
+        mkt_map = {'KRX-MARCAP':'ALL', 'KRX':'ALL', 'KOSPI':'STK', 'KOSDAQ':'KSQ', 'KONEX':'KNX'}
+        if self.market not in mkt_map:
+            raise ValueError(f"market shoud be one of {list(mkt_map.keys())}")
+        
+        mkt = mkt_map[self.market]
+        if mkt != 'ALL':
+            df = df[df['MarketId'] == mkt]
+            df = df.reset_index(drop=True)
+
+        df.attrs = {'exchange':'KRX', 'source':'KRX', 'data':'LISTINGS'}
+        return df
+
 
 class KrxMarcapListing:
     def __init__(self, market):
@@ -56,6 +97,41 @@ class KrxMarcapListing:
                     'MKTCAP':'Marcap', 'LIST_SHRS':'Stocks', 'MKT_NM':'Market', 'MKT_ID': 'MarketId' }
         df = df.rename(columns=cols_map)
         df = df.reset_index(drop=True)
+        df.attrs = {'exchange':'KRX', 'source':'KRX', 'data':'LISTINGS'}
+        return df
+
+
+class KrxStockListingCache: # descriptive information
+    def __init__(self, market):
+        self.market = market
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd'
+            }
+
+    def read(self):
+        url = 'https://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?baseName=krx.mdc.i18n.component&key=B128.bld'
+        try:
+            r = requests.get(url, headers=self.headers)
+            j = json.loads(r.text)
+        except:
+            print(r.text)
+            raise ValueError(f"Failed to load data from {url}")
+        date_str = j['result']['output'][0]['max_work_dt']
+        formatted_date = datetime.strptime(date_str, '%Y%m%d').strftime('%Y-%m-%d')
+
+        # 'KRX-DESC', 'KOSPI-DESC', 'KOSDAQ-DESC', 'KONEX-DESC'
+        mkt_list = ['KRX-DESC', 'KOSPI-DESC', 'KOSDAQ-DESC', 'KONEX-DESC']
+        if self.market not in mkt_list:
+            raise ValueError(f"market shoud be one of {mkt_list}")
+
+        csv_url = f'https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/desc/{formatted_date}.csv'
+        df = pd.read_csv(csv_url, dtype={'Code': str})
+        df['ListingDate'] = pd.to_datetime(df['ListingDate'], errors='coerce')
+
+        if self.market in ['KOSPI-DESC', 'KOSDAQ-DESC', 'KONEX-DESC']:
+            df = df[df['Market'] == self.market.replace('-DESC', '')].reset_index(drop=True)
+
         df.attrs = {'exchange':'KRX', 'source':'KRX', 'data':'LISTINGS'}
         return df
 
@@ -177,6 +253,55 @@ def _krx_delisting(from_date, to_date):
         print(f'No data found for KRX Delisting')
         return df
     return df[(from_date <= df['DelistingDate']) & (df['DelistingDate'] <= to_date)]
+
+class KrxDelistingCache:
+    def __init__(self, market, start=None, end=None):
+        self.market = market
+        self.headers = {
+            'User-Agent': 'Chrome/78.0.3904.87 Safari/537.36',
+            'Referer': 'https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd'
+            }
+        
+        self.start = datetime(1960,1,1) if start==None else pd.to_datetime(start)
+        self.start = datetime(1960,1,1) if self.start < datetime(1960,1,1) else self.start
+        self.end = datetime.today() if end==None else pd.to_datetime(end)
+        
+    def read(self):
+        url = 'https://data.krx.co.kr/comm/bldAttendant/executeForResourceBundle.cmd?baseName=krx.mdc.i18n.component&key=B128.bld'
+        try:
+            r = requests.get(url, headers=self.headers, timeout=5)
+            j = json.loads(r.text)
+        except:
+            print(r.text)
+            raise ValueError(f"Failed to load data from {url}")
+        
+        date_str = j['result']['output'][0]['max_work_dt']
+        from datetime import datetime
+        formatted_date = datetime.strptime(date_str, '%Y%m%d').strftime('%Y-%m-%d')
+        
+        csv_url = f'https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/delisting/{formatted_date}.csv'
+        
+        try:
+            df = pd.read_csv(csv_url, dtype={'Symbol': str, 'ToSymbol': str})
+        except Exception as e:
+            df = pd.DataFrame()
+        
+        if len(df) > 0:
+            df['ListingDate'] = pd.to_datetime(df['ListingDate'], format='%Y-%m-%d', errors='coerce')
+            df['DelistingDate'] = pd.to_datetime(df['DelistingDate'], format='%Y-%m-%d', errors='coerce')
+            df['ArrantEnforceDate'] = pd.to_datetime(df['ArrantEnforceDate'], format='%Y-%m-%d', errors='coerce')
+            df['ArrantEndDate'] = pd.to_datetime(df['ArrantEndDate'], format='%Y-%m-%d', errors='coerce')
+            
+            non_numeric_cols = [c for c in df.columns if df[c].dtype == object and c not in ['Symbol', 'Name', 'Market', 'SecuGroup', 'Kind', 'Reason', 'Industry', 'ToSymbol', 'ToName']]
+            for col in non_numeric_cols:
+                if col in ['ParValue', 'ListingShares']:
+                    df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', ''), errors='coerce')
+            
+            df = df[(self.start <= df['DelistingDate']) & (df['DelistingDate'] <= self.end)]
+            df = df.reset_index(drop=True)
+
+        df.attrs = {'exchange':'KRX', 'source':'KRX', 'data':'LISTINGS'}
+        return df
 
 class KrxDelisting:
     def __init__(self, market, start=None, end=None):

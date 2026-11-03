@@ -1,14 +1,14 @@
 # FinanceDataReader
 Open Source Financial data reader
 
-**2018-2025 [FinanceData.KR]()**
+**2018-2026 [FinanceData.KR]()**
 
 # Overview
 The FinanceDataReader is financial data reader(crawler) for finance. <br>
 The main functions are as follows.
 
-* KRX Stock listings (시장별 상장 종목 리스팅): 'KRX', 'KOSPI', 'KODAQ', 'KONEX'
-* Global Stock Symbol listings(해외 거래소 상장 종목 리스팅): 'NASDAQ', 'NYSE', 'AMEX', 'S&P500', 'SSE'(상해), 'SZSE'(심천), 'HKEX'(홍콩), 'TSE'(도쿄)
+* KRX Stock listings (시장별 상장 종목 리스팅): 'KRX', 'KOSPI', 'KOSDAQ', 'KONEX'
+* Global Stock Symbol listings(해외 거래소 상장 종목 리스팅): 'NASDAQ', 'NYSE', 'AMEX', 'S&P500', 'SSE'(상해), 'SZSE'(심천), 'HKEX'(홍콩), 'TSE'(도쿄), 'HOSE'(호치민)
 * KRX delistings: 'KRX-DELISTING'(상장폐지종목), 'KRX-ADMINISTRATIVE' (관리종목), 'KRX-MARCAP'(시가총액)
 * ETF Symbol listings: 'ETF/KR'
 * Stock price(개별종목 가격 데이터): '005930'(Samsung), '091990'(Celltrion Healthcare) ...
@@ -22,6 +22,62 @@ The main functions are as follows.
 
 ```bash
 pip install finance-datareader
+```
+
+또는 [uv](https://docs.astral.sh/uv/)를 사용하는 경우:
+
+```bash
+uv add finance-datareader          # 프로젝트 의존성으로 추가
+uv tool install finance-datareader # CLI 도구로 글로벌 설치
+```
+
+# CLI
+
+`fdr` 명령어를 사용하여 터미널에서 직접 금융 데이터를 조회할 수 있습니다.
+
+```bash
+# 설치 없이 바로 실행
+uvx --from finance-datareader fdr price AAPL --start 2024
+
+# 또는 uv tool 설치 후 사용
+uv tool install finance-datareader
+```
+
+### 가격 데이터 조회 (price)
+```bash
+fdr price 005930 --start 2024              # 삼성전자 2024년~현재
+fdr price AAPL -s 2024-01-01 -e 2024-06-30 # Apple 기간 지정
+fdr price KS11 -s 2024                # 코스피 지수
+fdr price FRED:DEXKOUS -s 2020             # FRED 달러/원 환율
+fdr price USD/KRW -s 2024                  # 달러 원화 환율
+```
+
+### 스냅샷 데이터 조회 (snap)
+```bash
+fdr snap KRX/INDEX/LIST                    # KRX 전체 지수 목록
+fdr snap KRX/INDEX/STOCK/1001              # KOSPI 지수 구성종목
+fdr snap NAVER/FINSTATE/005930             # 삼성전자 재무제표(연간)
+fdr snap NAVER/FINSTATE-1Q/005930          # 삼성전자 분기 재무제표 별도 
+fdr snap NAVER/FINSTATE-2Q/005930          # 삼성전자 분기 재무제표 연결
+fdr snap ECOS/KEYSTAT/LIST                 # 100대 경제지표
+```
+
+### 종목 리스팅 (listing)
+```bash
+fdr listing KRX                            # KRX 전종목
+fdr listing KOSPI                          # KOSPI 종목
+fdr listing NASDAQ                         # 나스닥 종목
+fdr listing "S&P500"                       # S&P500 종목
+fdr listing ETF/KR                         # 한국 ETF 전종목
+```
+
+### 출력 형식
+모든 데이터 명령에 `-f` 옵션으로 출력 형식을 지정할 수 있습니다:
+```bash
+fdr price AAPL -s 2024 -f csv              # CSV
+fdr price AAPL -s 2024 -f json             # JSON
+fdr price AAPL -s 2024 -f markdown         # Markdown 테이블
+fdr listing KRX -f csv > krx_stocks.csv    # 파일로 저장
 ```
 
 # KRX Login (Optional)
@@ -64,8 +120,8 @@ fdr.krx.login()
 # fdr.krx.enable_auto_login_on_failure(False)
 ```
 
-# Quick Start
-지원하는 거래소: KRX(한국거래소), NYSE(뉴욕증권거래소), NASDAQ(나스닥), AMEX(아멕스), SSE(상해), SZSE(심천), HKEX(홍콩), TSE(도쿄)
+# 라이브러리 사용하기
+지원하는 거래소: KRX(한국거래소), NYSE(뉴욕증권거래소), NASDAQ(나스닥), AMEX(아멕스), SSE(상해), SZSE(심천), HKEX(홍콩), TSE(도쿄), HOSE(호치민)
 
 ```python
 
@@ -113,7 +169,6 @@ df = fdr.DataReader('F', '1980-01-01', '2023-10-01') # Ford 자동차(F) (40년�
 df = fdr.DataReader('AAPL, TSLA, AMZN', '2020') # 애플, 테슬라, 아마존 (2020년 ~ 현재)
 
 # 데이터 소스 지정하기
-df = fdr.DataReader('KRX:000150', '2020-01-01') # 두산(000150) (한국거래소)
 df = fdr.DataReader('NAVER:000150', '2020-01-01') # 두산(000150) (네이버 파이낸스)
 df = fdr.DataReader('YAHOO:000150.KS', '2020-01-01') # 두산(000150) (야후 파이낸스)
 
@@ -160,34 +215,34 @@ df = fdr.DataReader('US5YT')   # 5년 만기 미국국채 수익률
 df = fdr.DataReader('US10YT') # 10년 만기 미국국채 수익률
 df = fdr.DataReader('US30YT') # 30년 만기 미국국채 수익률
 
-# 종목 리스팅 (종목수는 2022년 10월 25일 기준, 시장 규모 가늠 용도)
+# 종목 리스팅 
 # KRX 상장회사(발행회사)목록 (가격 중심, 주식 종목) - 시가총액순
-stocks = fdr.StockListing('KRX') # KRX: 2,663 종목(=코스피+코스닥+코넥스)
-stocks = fdr.StockListing('KOSPI') # KOSPI: 940 종목
-stocks = fdr.StockListing('KOSDAQ') # KOSDAQ: 1,597 종목
-stocks = fdr.StockListing('KONEX') # KONEX: 126 종목
+stocks = fdr.StockListing('KRX') # KRX 종목(=코스피+코스닥+코넥스)
+stocks = fdr.StockListing('KOSPI') # KOSPI 종목
+stocks = fdr.StockListing('KOSDAQ') # KOSDAQ 종목
+stocks = fdr.StockListing('KONEX') # KONEX종목
 
 ## KRX 전종목 목록 (설명 중심, 주식+펀드등 전종목)
-stocks = fdr.StockListing('KRX-DESC') # 한국거래소: 7,632 종목
-stocks = fdr.StockListing('KOSPI-DESC') # KOSPI: 5,897 종목
-stocks = fdr.StockListing('KOSDAQ-DESC') # KOSDAQ: 1,609 종목
-stocks = fdr.StockListing('KONEX-DESC') # KONEX: 126 종목
+stocks = fdr.StockListing('KRX-DESC') # 한국거래소 종목
+stocks = fdr.StockListing('KOSPI-DESC') # KOSPI 종목
+stocks = fdr.StockListing('KOSDAQ-DESC') # KOSDAQ 종목
+stocks = fdr.StockListing('KONEX-DESC') # KONEX 종목
 
 ## KRX 특수 종목 리스팅 (상장폐지 종목, 관리종목)
-stocks = fdr.StockListing('KRX-DELISTING') # 3천+ 종목 - 상장폐지 종목 전체
-stocks = fdr.StockListing('KRX-ADMIN') # 50+ 종목 - KRX 관리종목
+stocks = fdr.StockListing('KRX-DELISTING') # 상장폐지 종목 전체
+stocks = fdr.StockListing('KRX-ADMIN') # KRX 관리종목
 
 ## US Market listings 미국 시장 거래소별 전종목 리스팅
-stocks = fdr.StockListing('S&P500') # S&P500: 503 종목  
-stocks = fdr.StockListing('NASDAQ') # 나스닥 (NASDAQ): 4천+ 종목
-stocks = fdr.StockListing('NYSE') # 뉴욕증권거래소 (NYSE): 3천+ 종목
+stocks = fdr.StockListing('S&P500') # S&P500 종목  
+stocks = fdr.StockListing('NASDAQ') # 나스닥 (NASDAQ) 종목
+stocks = fdr.StockListing('NYSE') # 뉴욕증권거래소 (NYSE) 종목
 
 ## Global Market listings 글로벌 시장 거래소별 전종목 리스팅
-stocks = fdr.StockListing('SSE') # 상하이 증권거래소 (Shanghai Stock Exchange: SSE): 1천+ 종목
-stocks = fdr.StockListing('SZSE') # 선전 증권거래소(Shenzhen Stock Exchange: SZSE): 1천+ 종목
-stocks = fdr.StockListing('HKEX') # 홍콩 증권거래소(Hong Kong Exchange: HKEX): 2천5백+ 종목
-stocks = fdr.StockListing('TSE') # 도쿄 증권거래소(Tokyo Stock Exchange: TSE): 3천9백+ 종목
-stocks = fdr.StockListing('HOSE') # 호찌민 증권거래소(Ho Chi Minh City Stock Exchange: HOSE): 4백+ 종목
+stocks = fdr.StockListing('SSE') # 상하이 증권거래소 (SSE) 종목
+stocks = fdr.StockListing('SZSE') # 선전 증권거래소 (SZSE) 종목
+stocks = fdr.StockListing('HKEX') # 홍콩 증권거래소 (HKEX) 종목
+stocks = fdr.StockListing('TSE') # 도쿄 증권거래소 (TSE) 종목
+stocks = fdr.StockListing('HOSE') # 호찌민 증권거래소 (HOSE) 종목
 
 ## KRX ETFs
 etfs = fdr.StockListing('ETF/KR') # 한국 ETF 전종목
@@ -260,7 +315,7 @@ fdr.DataReader('YAHOO:000100.KS', '2023', '2024') # 2023년 데이터
 * [S&P500 가격 데이터 수집과 수익률 분석](https://nbviewer.jupyter.org/710b8f0a4bd9a8df91ae1be6c7e838b1) 
 * [S&P500 팩터 데이터 수집과 분석](https://nbviewer.jupyter.org/35a1b0d5248bc9b09513e53be437ac42)
 
-**2018-2025 [FinanceData.KR]()**
+**2018-2026 [FinanceData.KR]()**
 
 ### Cross-Process Session Sharing
 

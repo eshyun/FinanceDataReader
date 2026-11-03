@@ -3,9 +3,13 @@
 
 from FinanceDataReader.ecos.data import (EcosDataReader, EcosKeyStatDataReader)
 from FinanceDataReader.ecos.snap import (EcosSnapReader)
-from FinanceDataReader.krx.data import (KrxDailyReader, KrxDailyDetailReader, KrxIndexReader, KrxDelistingReader)
-from FinanceDataReader.krx.snap import (KrxSnapReader)
-from FinanceDataReader.krx.listing import (KrxStockListing, KrxDelisting, KrxMarcapListing, KrxAdministrative)
+from FinanceDataReader.krx.data import (KrxDailyReader, KrxDailyDetailReader, KrxDelistingReader)
+from FinanceDataReader.krx.data import (KrxIndexReader, KrxIndexReaderCache)
+from FinanceDataReader.krx.snap import (KrxSnapReader, KrxSnapReaderCache)
+from FinanceDataReader.krx.listing import (KrxStockListing, KrxStockListingCache)
+from FinanceDataReader.krx.listing import (KrxDelisting, KrxDelistingCache)
+from FinanceDataReader.krx.listing import (KrxMarcapListing, KrxMarcapListingCache)
+from FinanceDataReader.krx.listing import (KrxAdministrative)
 from FinanceDataReader.yahoo.data import (YahooDailyReader)
 from FinanceDataReader.nasdaq.listing import (NasdaqStockListing)
 from FinanceDataReader.wikipedia.listing import (WikipediaStockListing)
@@ -56,15 +60,25 @@ def DataReader(symbol:str, start=None, end=None, exchange=None, data_source=None
     ## major symbols (data source NOT specified)
     if not source: # source not specified -> stocks
         # 1) major symbols (data source NOT specified)
-        # 1-1) KRX major indices
+        # 1-1) KRX major indices from cache
         krx_index_symbol_map = {
-            'KS11': '1001', 'KOSPI': '1001',  # 코스피
-            'KQ11': '2001', 'KOSDAQ': '2001', # 코스닥
-            'KS200': '1028', 'KPI200': '1028', # 코스피200
+            'KS11': 'ks11', 'KOSPI': 'ks11',  # 코스피
+            'KQ11': 'kq11', 'KOSDAQ': 'kq11', # 코스닥
+            'KS200': 'ks200', 'KPI200': 'ks200', # 코스피200
         }
         if symbol in krx_index_symbol_map:
             symbol = krx_index_symbol_map[symbol]
-            return KrxIndexReader(symbol, start, end).read()
+            return KrxIndexReaderCache(symbol, start, end).read()
+
+        # 1-1) KRX major indices (authenication required)
+        # krx_index_symbol_map = {
+        #     'KS11': '1001', 'KOSPI': '1001',  # 코스피
+        #     'KQ11': '2001', 'KOSDAQ': '2001', # 코스닥
+        #     'KS200': '1028', 'KPI200': '1028', # 코스피200
+        # }
+        # if symbol in krx_index_symbol_map:
+        #     symbol = krx_index_symbol_map[symbol]
+        #     return KrxIndexReader(symbol, start, end).read()
 
         # 1-2) yahoo major indices
         yahoo_index_symbol_map = { 
@@ -83,7 +97,9 @@ def DataReader(symbol:str, start=None, end=None, exchange=None, data_source=None
             symbol = krx_index_symbol_map[symbol]
             return KrxIndexReader(symbol, start, end).read()
 
-        if re.match(r'\d{5}[0-9KLMN]', code): 
+        # KRX stock code reform (2024.1.1~)
+        # https://www.hankyung.com/article/2023052334076
+        if re.match(r'\d{4}[0-9A-HJ-NP-TV-Z][0-9KLMN]', code):
             # Naver is default source for KRX stocks  
             return NaverDailyReader(codes, start, end).read()
         # 1-4) US and other stocks 
@@ -134,7 +150,7 @@ def SnapDataReader(ticker: str) -> pd.DataFrame:
     '''
     ticker = ticker.upper()
     if ticker.startswith('KRX/'):
-        return KrxSnapReader(ticker).read()
+        return KrxSnapReaderCache(ticker).read()
     elif ticker.startswith('ECOS/'):
         return EcosSnapReader(ticker).read()
     elif ticker.startswith('NAVER/'):
@@ -155,13 +171,13 @@ def StockListing(market: str, start=None, end=None) -> pd.DataFrame:
     '''
     market = market.upper()
     if market in ['KRX', 'KOSPI', 'KOSDAQ', 'KONEX', 'KRX-MARCAP']:
-        return KrxMarcapListing(market).read()
+        return KrxMarcapListingCache(market).read()
     elif market in ['KRX-DESC', 'KOSPI-DESC', 'KOSDAQ-DESC', 'KONEX-DESC']:
-        return KrxStockListing(market).read()
+        return KrxStockListingCache(market).read()
     elif market in ['NASDAQ', 'NYSE', 'AMEX', 'SSE', 'SZSE', 'HKEX', 'TSE', 'HOSE']:
         return NaverStockListing(market).read()
     elif market in ['KRX-DELISTING' ]:
-        return KrxDelisting(market, start, end).read()
+        return KrxDelistingCache(market, start, end).read()
     elif market in ['KRX-ADMINISTRATIVE', 'KRX-ADMIN' ]:
         return KrxAdministrative(market).read()
     elif market in ['S&P500', 'SP500']:

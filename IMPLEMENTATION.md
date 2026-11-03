@@ -22,7 +22,7 @@ Credentials are resolved in the following order:
    - `KRX_PASSWORD` (or `KRX_PW`)
 3. Credentials file:
    - `KRX_CREDENTIALS_FILE` (if set)
-   - otherwise `~/.config/finance-datareader/krx_credentials.json`
+   - otherwise `~/.config/krx-session/krx_credentials.json`
 
 ### Auto-login
 

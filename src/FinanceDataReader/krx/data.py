@@ -259,6 +259,32 @@ class KrxDailyDetailReader:
         df.attrs = {'exchange':'KRX', 'source':'KRX', 'data':'PRICE'}
         return df
 
+class KrxIndexReaderCache:
+    def __init__(self, symbol, start=None, end=None):
+        self.symbol = symbol
+        self.start = datetime(2010,1,1) if start == None else pd.to_datetime(start)
+        self.end = datetime.today() if end == None else pd.to_datetime(end)
+
+    def read(self):
+        df_list = []
+        for year in range(self.start.year, self.end.year + 1):
+            url = f'https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/index/year_{self.symbol}/{year}.csv'
+            try:
+                df = pd.read_csv(url, parse_dates=True, index_col='Date')
+                df_list.append(df)
+            except Exception:
+                pass
+
+        if len(df_list) > 0:
+            df = pd.concat(df_list)
+            df = df.sort_index()
+            df = df.loc[self.start:self.end]
+        else:
+            df = pd.DataFrame()
+
+        df.attrs = {'exchange':'KRX', 'source':'KRX', 'data':'INDEX'}
+        return df
+
 class KrxIndexReader:
     def __init__(self, symbol, start=None, end=None):
         self.symbol = symbol

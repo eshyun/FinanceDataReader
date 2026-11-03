@@ -1,6 +1,6 @@
 # ----------------------------------------------
-# import sys
-# sys.path.insert(0, r'G:\내 드라이브\g_dev\FinanceDataReader-dev\FinanceDataReader\src')
+import sys
+sys.path.insert(0, r'D:\dev\FinanceDataReader-dev\FinanceDataReader\src')
 
 import pytest
 import FinanceDataReader as fdr
@@ -19,27 +19,30 @@ def test_krx_daily():
 def test_krx_major_index():
     '''주요 지수'''
     df = fdr.DataReader('KS11') # KOSPI지수: 2001-06-11 ~ 현재
-    assert len(df) > 5500
-    assert df.loc['2001-06-11', 'Close'] == 608.23
+    assert len(df) > 200
+    assert df.loc['2026-03-10', 'Close'] == 5532.59
 
     df = fdr.DataReader('KOSPI') # KOSPI 지수: 2001-06-11 ~ 현재
-    assert len(df) > 5500
-    assert df.loc['2001-06-11', 'Close'] == 608.23
+    assert len(df) > 200
+    assert df.loc['2026-03-10', 'Close'] == 5532.59
 
-    df = fdr.DataReader('KOSPI', '2020-01-02') # KOSPI 지수: 2020-01-02 ~ 현재
-    assert len(df) > 100
-    assert df.loc['2020-01-02', 'Close'] == 2175.17
+    df = fdr.DataReader('KOSPI', '2020-03-10') # KOSPI 지수: 2020-01-02 ~ 현재
+    assert len(df) > 200
+    assert df.loc['2026-03-10', 'Close'] == 5532.59
 
-    df = fdr.DataReader('KOSDAQ', '2020-01-02') # KOSDAQ 지수: 2020-01-02 ~ 현재
-    assert df.loc['2020-01-02', 'Close'] == 674.02
+    df = fdr.DataReader('kospi', '2020-03-10') # KOSPI 지수: 2020-01-02 ~ 현재
+    assert len(df) > 200
+    assert df.loc['2026-03-10', 'Close'] == 5532.59
 
-    df = fdr.DataReader('kospi', '2020-01-02') # KOSPI 지수: 2020-01-02 ~ 현재
-    assert len(df) > 100
-    assert df.loc['2020-01-02', 'Close'] == 2175.17
+    df = fdr.DataReader('KOSDAQ', '2020-03-10') # KOSDAQ 지수: 2020-01-02 ~ 현재
+    assert df.loc['2026-03-10', 'Close'] == 1137.68
+
+    df = fdr.DataReader('kosdaq', '2020-03-10') # KOSDAQ 지수: 2020-01-02 ~ 현재
+    assert df.loc['2026-03-10', 'Close'] == 1137.68
 
     df = fdr.DataReader('KS200', '2020-01-02') # KOSPI200 지수: 2020-01-02 ~ 현재
     assert len(df) > 100
-    assert df.loc['2020-01-02', 'Close'] > 200
+    assert df.loc['2026-03-10', 'Close'] == 823.02
 
 @pytest.mark.krx
 def test_krx_index():
@@ -174,26 +177,28 @@ def test_stocklisting_desc():
     # KRX 전종목 목록 (설명 중심, 주식 + 펀드등 전종목)
     # Symbol, Market, Name, Sector, Industry, ListingDate, SettleMonth, Representative, HomePage, Region
 
-    df = fdr.StockListing('KRX-DESC') # 한국거래소 전체 7000+ 종목
+    df = fdr.StockListing('KRX-DESC') # 한국거래소 전체 종목
     assert len(df) > 100
     
-    df = fdr.StockListing('KOSPI-DESC') # KOSPI 5000+ 종목
+    df = fdr.StockListing('KOSPI-DESC') # KOSPI 종목
     assert len(df) > 100
     
-    df = fdr.StockListing('KOSDAQ-DESC') # KOSDAQ 1600+ 종목
+    df = fdr.StockListing('KOSDAQ-DESC') # KOSDAQ 종목
     assert len(df) > 100
     
-    df = fdr.StockListing('KONEX-DESC') # 100+ 종목
+    df = fdr.StockListing('KONEX-DESC') #  KONEX 종목
     assert len(df) > 100
 
 @pytest.mark.krx_listings
-def test_krx_listing():
+def test_krx_delisting():
     df = fdr.StockListing('KRX-DELISTING') # 3500+ 종목 - KRX 상장폐지 종목 전체
-    assert len(df) > 100
+    assert len(df) > 10
 
+def test_krx_administrative():
     df = fdr.StockListing('KRX-ADMINISTRATIVE') # 50+ 종목 - KRX 관리종목
     assert len(df) > 10
 
+def test_krx_snp500():
     df = fdr.StockListing('S&P500') # S&P500 종목
     assert len(df) >= 500
 
@@ -243,5 +248,6 @@ def test_snap_krx():
     df = fdr.SnapDataReader('KRX/INDEX/LIST') # KRX 지수목록
     assert len(df) >= 100
 
-    df = fdr.SnapDataReader('KRX/INDEX/STOCK/1002') # 코스피 대형주 종목 리스트
+def test_snap_krx_stock_list():
+    df = fdr.SnapDataReader('KRX/INDEX/STOCK/1001') # 코스피 대형주 종목 리스트
     assert len(df) >= 90
