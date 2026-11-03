@@ -34,7 +34,7 @@ class KrxMarcapListingCache:
         # https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/krx/2026-03-11.csv
         # 해당 날짜의 데이터를 가져옴
         url = f'https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/krx/{formatted_date}.csv'
-        df = pd.read_csv(url, dtype={'Code': str, 'Dept': str, 'ChangeCode': str, 'MarketId': str})
+        df = pd.read_csv(url, index_col=0, dtype={'Code': str, 'Dept': str, 'ChangeCode': str, 'MarketId': str})
         
         mkt_map = {'KRX-MARCAP':'ALL', 'KRX':'ALL', 'KOSPI':'STK', 'KOSDAQ':'KSQ', 'KONEX':'KNX'}
         if self.market not in mkt_map:
@@ -126,7 +126,7 @@ class KrxStockListingCache: # descriptive information
             raise ValueError(f"market shoud be one of {mkt_list}")
 
         csv_url = f'https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/desc/{formatted_date}.csv'
-        df = pd.read_csv(csv_url, dtype={'Code': str})
+        df = pd.read_csv(csv_url, index_col=0, dtype={'Code': str})
         df['ListingDate'] = pd.to_datetime(df['ListingDate'], errors='coerce')
 
         if self.market in ['KOSPI-DESC', 'KOSDAQ-DESC', 'KONEX-DESC']:
@@ -282,7 +282,7 @@ class KrxDelistingCache:
         csv_url = f'https://raw.githubusercontent.com/FinanceData/fdr_krx_data_cache/refs/heads/master/data/listing/delisting/{formatted_date}.csv'
         
         try:
-            df = pd.read_csv(csv_url, dtype={'Symbol': str, 'ToSymbol': str})
+            df = pd.read_csv(csv_url, index_col=0, dtype={'Symbol': str, 'ToSymbol': str})
         except Exception as e:
             df = pd.DataFrame()
         

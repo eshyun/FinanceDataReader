@@ -35,6 +35,28 @@ def test_krx_session_file_lock_and_write(tmp_path, monkeypatch):
     assert lock_file.exists()
 
 
+def test_krx_session_file_serializes_curl_cffi_cookies(tmp_path, monkeypatch):
+    curl_cffi = pytest.importorskip("curl_cffi")
+    monkeypatch.setenv("KRX_SESSION_DIR", str(tmp_path))
+
+    session = curl_cffi.requests.Session()
+    session.cookies.set(
+        name="_test_cookie",
+        value="1",
+        domain="data.krx.co.kr",
+        path="/",
+    )
+
+    serialized = fdr.krx._serialize_session_cookies(session)
+    assert serialized["_test_cookie"]["value"] == "1"
+
+    fdr.krx._save_session_to_file(session, mbr_no="1", ttl_minutes=1)
+
+    loaded = fdr.krx._load_session_from_file()
+    assert loaded is not None
+    assert loaded.cookies.get_dict().get("_test_cookie") == "1"
+
+
 def test_krx_post_retries_on_logout(monkeypatch):
     import FinanceDataReader.krx as krx
 

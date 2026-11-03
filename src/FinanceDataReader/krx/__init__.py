@@ -119,11 +119,19 @@ def _get_session_file_path():
 
 
 def _serialize_session_cookies(session):
-    """Serialize session cookies to a dict."""
+    """Serialize session cookies to a dict.
+
+    curl_cffi's Cookies iterator yields cookie names (str), whereas
+    http.cookiejar iterators yield Cookie objects. Prefer the underlying jar
+    when present so both session types serialize the same fields.
+    """
     try:
         if hasattr(session, 'cookies'):
             cookies = {}
-            for cookie in session.cookies:
+            cookie_iter = getattr(session.cookies, 'jar', None)
+            if cookie_iter is None:
+                cookie_iter = session.cookies
+            for cookie in cookie_iter:
                 cookies[cookie.name] = {
                     'value': cookie.value,
                     'domain': cookie.domain,
